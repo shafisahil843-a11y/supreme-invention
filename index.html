@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Tumhari Yaad 💕</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; -webkit-tap-highlight-color:transparent; }
+  html, body { overflow:hidden; height:100%; background:#0a0a1a; color:#fff; overscroll-behavior:none; }
+
+  /* ---------- GAME SCREEN ---------- */
+  #game-screen { position:fixed; inset:0; overflow:hidden; touch-action:none; display: block; }
+  
+  #bg-layer {
+    position:absolute; inset:0;
+    background: linear-gradient(to bottom, #0d0f26 0%, #2a1b41 45%, #1e3b23 45%, #0a1c0e 100%);
+  }
+
+  /* Chaand */
+  .moon {
+    position:absolute; top:10%; right:15%; width:70px; height:70px;
+    background:#ffebd6; border-radius:50%;
+    box-shadow: 0 0 40px #ffebd6, 0 0 80px #ffebd6; z-index: 1;
+  }
+
+  /* Taare */
+  .star { position:absolute; background:#fff; border-radius:50%; opacity:0.8; animation:twinkle 2s infinite alternate; z-index: 1; }
+  @keyframes twinkle { 0% { opacity:0.2; transform:scale(0.8); } 100% { opacity:1; transform:scale(1.2); } }
+
+  /* Ghaas */
+  .grass {
+    position:absolute; bottom:0; width:100%; height:150px; z-index: 1;
+    background: radial-gradient(ellipse at bottom, #2e5c32 0%, transparent 70%);
+  }
+
+  /* Characters ko thoda bada kiya gaya hai taaki mobile pe saaf dikhe */
+  .character {
+    position:absolute; top:0; left:0; width:80px; height:130px; z-index:5;
+    pointer-events:none; will-change:transform;
+  }
+  .character svg { width:100%; height:100%; display:block; filter:drop-shadow(0 8px 12px rgba(0,0,0,.6)); }
+
+  /* Ladki blush karegi */
+  #girl.blushing::before {
+    content:''; position:absolute; width:130px; height:130px; top:30%; left:50%;
+    transform:translate(-50%,-50%);
+    background:radial-gradient(circle, rgba(255,126,182,.65) 0%, transparent 70%);
+    border-radius:50%; animation:blushPulse 1.3s ease-in-out infinite; z-index:-1;
+  }
+  @keyframes blushPulse {
+    0%,100% { transform:translate(-50%,-50%) scale(1); opacity:.7; }
+    50%     { transform:translate(-50%,-50%) scale(1.35); opacity:1; }
+  }
+
+  .float-heart {
+    position:absolute; font-size:1.8rem; pointer-events:none; z-index:8;
+    animation:floatUp 1.8s ease-out forwards;
+  }
+  @keyframes floatUp {
+    0%   { opacity:0; transform:translateY(0) scale(.5); }
+    20%  { opacity:1; }
+    100% { opacity:0; transform:translateY(-90px) scale(1.4); }
+  }
+
+  .heart-item {
+    position:absolute; font-size:2.5rem; z-index:4;
+    animation:heartBob 2s ease-in-out infinite;
+    filter:drop-shadow(0 0 15px rgba(255,94,156,.9));
+    will-change:transform; pointer-events:none;
+  }
+  @keyframes heartBob {
+    0%,100% { transform:translateY(0) rotate(-5deg); }
+    50%     { transform:translateY(-15px) rotate(5deg); }
+  }
+
+  #ui-top {
+    position:absolute; top:15px; left:15px; right:15px;
+    display:flex; justify-content:space-between; align-items:flex-start;
+    z-index:20; pointer-events:none;
+  }
+  .ui-pill {
+    background:rgba(0,0,0,.75); padding:10px 18px; border-radius:50px;
+    font-size:1rem; font-weight:600;
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    border:1.5px solid rgba(255,126,182,.55);
+    display:flex; align-items:center; gap:8px;
+  }
+  #loveVal { color:#ff7eb6; }
+  #heartsCount { color:#ff5e9c; }
+  
+  #love-bar-wrap {
+    position:absolute; top:60px; left:15px; width:min(200px,40vw); height:8px;
+    background:rgba(0,0,0,.6); border-radius:10px; overflow:hidden;
+    z-index:20; border:1px solid rgba(255,126,182,.4);
+  }
+  #love-bar-fill {
+    height:100%; width:0%;
+    background:linear-gradient(90deg,#ff5e9c,#ffb86c);
+    transition:width .3s; border-radius:10px;
+  }
+
+  #interact-prompt {
+    position:absolute; bottom:50px; left:50%; transform:translateX(-50%);
+    padding:15px 30px; border-radius:50px;
+    background:linear-gradient(135deg,#ff5e9c,#a855f7);
+    font-weight:700; font-size:1.1rem; color:#fff; border:none; cursor:pointer;
+    display:none; z-index:20;
+    box-shadow:0 8px 24px rgba(255,94,156,.6);
+    animation:pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { transform:translateX(-50%) scale(1); }
+    50%     { transform:translateX(-50%) scale(1.1); }
+  }
+
+  #dialog-bubble {
+    position:absolute; bottom:140px; left:50%; transform:translateX(-50%);
+    background:rgba(20,10,30,.95); backdrop-filter:blur(15px);
+    padding:14px 22px; border-radius:20px; border:2px solid #ff7eb6;
+    max-width:min(90vw, 380px); z-index:25; display:none; text-align:center;
+    font-size:1rem; animation:bubbleIn .3s ease-out;
+  }
+  @keyframes bubbleIn {
+    from { opacity:0; transform:translateX(-50%) translateY(10px) scale(.9); }
+    to   { opacity:1; transform:translateX(-50%) translateY(0) scale(1); }
+  }
+
+  #joystick {
+    position:absolute; bottom:30px; left:30px; width:120px; height:120px;
+    border-radius:50%; background:rgba(255,255,255,.1);
+    border:2px solid rgba(255,255,255,.3);
+    display:none; z-index:15; touch-action:none;
+  }
+  #joystick-knob {
+    position:absolute; width:60px; height:60px; border-radius:50%;
+    background:rgba(255,126,182,.9); top:50%; left:50%;
+    transform:translate(-50%,-50%); box-shadow:0 4px 10px rgba(0,0,0,.5);
+    pointer-events:none;
+  }
+
+  #hint {
+    position:absolute; bottom:15px; left:50%; transform:translateX(-50%);
+    color:rgba(255,255,255,.7); font-size:.8rem; text-align:center;
+    z-index:10; pointer-events:none; transition:opacity 1s;
+  }
+
+  #ending-screen {
+    display:none; position:absolute; inset:0; z-index:50;
+    background:rgba(10,5,20,.95); backdrop-filter:blur(15px);
+    flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:30px;
+  }
+  #ending-screen h1 {
+    font-size:2.2rem; margin-bottom:15px; color:#ff7eb6;
+    animation:glow 2s ease-in-out infinite;
+  }
+  @keyframes glow {
+    0%,100% { text-shadow:0 0 20px rgba(255,126,182,.6); }
+    50%     { text-shadow:0 0 40px rgba(255,126,182,1); }
+  }
+  #ending-screen p { color:#ddd; max-width:500px; margin-bottom:25px; line-height:1.7; }
+  #ending-screen button {
+    padding:14px 40px; border:none; border-radius:50px; cursor:pointer;
+    background:linear-gradient(90deg,#ff5e9c,#a855f7); color:#fff;
+    font-size:1rem; font-weight:700;
+  }
+
+  @media (max-width:600px) {
+    #joystick { display:block; }
+  }
+</style>
+</head>
+<body>
+
+<div id="game-screen">
+  <div id="bg-layer"></div>
+  
+  <div class="moon"></div>
+  <div class="grass"></div>
+  <div class="star" style="top:15%; left:20%; width:3px; height:3px;"></div>
+  <div class="star" style="top:25%; left:80%; width:2px; height:2px;"></div>
+  <div class="star" style="top:10%; left:50%; width:4px; height:4px;"></div>
+  <div class="star" style="top:35%; left:10%; width:2px; height:2px;"></div>
+  <div class="star" style="top:20%; left:60%; width:3px; height:3px;"></div>
+
+  <!-- Ladka -->
+  <div id="boy" class="character">
+    <svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="30" cy="96" rx="18" ry="4" fill="rgba(0,0,0,.5)"/>
+      <rect x="22" y="72" width="6" height="20" rx="3" fill="#1f2937"/>
+      <rect x="32" y="72" width="6" height="20" rx="3" fill="#1f2937"/>
+      <rect x="18" y="42" width="24" height="35" rx="8" fill="#4a90e2"/>
+      <rect x="10" y="45" width="10" height="25" rx="5" fill="#4a90e2"/>
+      <rect x="40" y="45" width="10" height="25" rx="5" fill="#4a90e2"/>
+      <circle cx="15" cy="70" r="5" fill="#fdbcb4"/>
+      <circle cx="45" cy="70" r="5" fill="#fdbcb4"/>
+      <circle cx="30" cy="28" r="18" fill="#fdbcb4"/>
+      <path d="M12 22 Q14 8 30 6 Q46 8 48 22 Q44 14 30 12 Q16 14 12 22 Z" fill="#2d1b0e"/>
+      <circle cx="23" cy="28" r="2.5" fill="#111"/>
+      <circle cx="37" cy="28" r="2.5" fill="#111"/>
+      <path d="M25 36 Q30 40 35 36" stroke="#c14b3b" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <circle cx="19" cy="34" r="3" fill="#ffb3b3" opacity=".6"/>
+      <circle cx="41" cy="34" r="3" fill="#ffb3b3" opacity=".6"/>
+    </svg>
+  </div>
+
+  <!-- Ladki (Hijab style) -->
+  <div id="girl" class="character">
+    <svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="30" cy="96" rx="18" ry="4" fill="rgba(0,0,0,.5)"/>
+      
+      <!-- Dress (Thoda grey kiya taaki andhere me dikhe) -->
+      <path d="M15 42 L45 42 L48 72 L12 72 Z" fill="#222"/>
+      <rect x="8" y="45" width="12" height="25" rx="5" fill="#222"/>
+      <rect x="40" y="45" width="12" height="25" rx="5" fill="#222"/>
+      
+      <!-- Hijab (Peeche) -->
+      <path d="M12 28 Q10 10 30 6 Q50 10 48 28 L52 58 Q48 52 46 40 L46 28 Q42 15 30 12 Q18 15 14 28 L14 40 Q12 52 8 58 Z" fill="#1a1a1a"/>
+      
+      <!-- Chehra (Skin) -->
+      <circle cx="30" cy="28" r="16" fill="#fdbcb4"/>
+      
+      <!-- Aankhein -->
+      <g fill="#111">
+        <ellipse cx="23" cy="28" rx="4" ry="2.5" />
+        <circle cx="23" cy="28" r="1.5" fill="#5a2e1a" />
+        <circle cx="23" cy="28" r="0.8" fill="#fff" />
+        
+        <ellipse cx="37" cy="28" rx="4" ry="2.5" />
+        <circle cx="37" cy="28" r="1.5" fill="#5a2e1a" />
+        <circle cx="37" cy="28" r="0.8" fill="#fff" />
+      </g>
+      
+      <!-- Brows -->
+      <path d="M18 24 Q23 21 27 24" stroke="#111" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M42 24 Q37 21 33 24" stroke="#111" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+
+      <!-- Naqab -->
+      <path d="M14 32 L46 32 Q46 45 30 46 Q14 45 14 32 Z" fill="#1a1a1a"/>
+      
+      <!-- Hijab (Aage) -->
+      <path d="M12 28 Q10 10 30 6 Q50 10 48 28 Q42 15 30 12 Q18 15 12 28 Z" fill="#1a1a1a"/>
+      <path d="M14 28 Q12 45 20 50 Q14 40 14 28 Z" fill="#1a1a1a"/>
+      <path d="M46 28 Q48 45 40 50 Q46 40 46 28 Z" fill="#1a1a1a"/>
+      
+      <!-- Blush -->
+      <circle cx="20" cy="33" r="3" fill="#ff8aa8" opacity=".6"/>
+      <circle cx="40" cy="33" r="3" fill="#ff8aa8" opacity=".6"/>
+    </svg>
+  </div>
+
+  <div id="hearts-container"></div>
+  <div id="fx-container"></div>
+
+  <div id="ui-top">
+    <div class="ui-pill">💖 <span id="loveVal">0</span>%</div>
+    <div class="ui-pill">💝 <span id="heartsCount">0</span></div>
+  </div>
+  <div id="love-bar-wrap"><div id="love-bar-fill"></div></div>
+
+  <button id="interact-prompt">💕 Tap — Dil Do</button>
+  <div id="dialog-bubble"></div>
+
+  <div id="joystick"><div id="joystick-knob"></div></div>
+  <div id="hint">Joystick se chalao | Dil dene ke liye Tap karo</div>
+
+  <div id="ending-screen">
+    <h1 id="endTitle"></h1>
+    <p id="endText"></p>
+    <button onclick="location.reload()">Phir Se Khelo 🔁</button>
+  </div>
+</div>
+
+<script>
+const game = {
+  love: 0, heartsHeld: 0,
+  player: { x:0, y:0, speed:4.5, facingLeft:false, walking:false },
+  girl:   { x:0, y:0, speed:1.8, facingLeft:false, walking:false,
+            state:'idle', stateTimer:60, target:null, blushing:false },
+  collectibles: [], keys: {},
+  screenW:0, screenH:0, charW:80, charH:130,
+  running:false, lastTime:0, spawnTimer:0, nextSpawn:120, endingShown:false
+};
+let time = 0;
+
+const $ = id => document.getElementById(id);
+const boyEl = $('boy'), girlEl = $('girl');
+const heartsContainer = $('hearts-container'), fxContainer = $('fx-container');
+
+const giftResponses = [
+  "Yeh... mere liye? 🥺", "*sharma ke* Thank you...",
+  "Tum bahut acche ho 💕", "Mera dil khush ho gaya...",
+  "Aur laao na... please 😊", "Tumhare saath achha lagta hai",
+  "Main... tumhare paas rehna chahti hoon", "Yeh pyar sach hai na?",
+  "Tumhari yaad aati hai mujhe bhi", "Bas tum saath raho... 🥰"
+];
+const blushSays = [
+  "*sharma ke dekhti hai*", "Tum bahut paas ho...",
+  "Mera dil dhadak raha hai...", "Kya dekh rahe ho?", "Bas... paas mat aao 😳"
+];
+
+/* ================= FIXED GAME START ================= */
+// 0.5 second ka delay diya taaki mobile screen size sahi se load ho jaye
+window.addEventListener('load', () => {
+  setTimeout(startGame, 500);
+});
+
+function startGame() {
+  game.screenW = window.innerWidth;
+  game.screenH = window.innerHeight;
+  game.charW = boyEl.offsetWidth || 80;
+  game.charH = boyEl.offsetHeight || 130;
+
+  // Ladka shuru me left-neeche hoga, Ladki right-me hoga
+  game.player.x = game.screenW * 0.2;
+  game.player.y = game.screenH * 0.6;
+  game.girl.x   = game.screenW * 0.7;
+  game.girl.y   = game.screenH * 0.6;
+
+  // 4 dil spawn karo
+  for (let i = 0; i < 4; i++) spawnCollectible();
+
+  game.running = true;
+  game.lastTime = performance.now();
+  requestAnimationFrame(gameLoop);
+  setTimeout(() => { $('hint').style.opacity = '0'; }, 6000);
+}
+
+function gameLoop(t) {
+  if (!game.running) return;
+  time = t;
+  const dt = Math.min((t - game.lastTime) / 16.67, 3);
+  game.lastTime = t;
+  updatePlayer(dt);
+  updateGirl(dt);
+  updateCollectibles(dt);
+  updateProximity();
+  updateUI();
+  requestAnimationFrame(gameLoop);
+}
+
+function updatePlayer(dt) {
+  const p = game.player;
+  let dx = 0, dy = 0;
+  if (game.keys['ArrowLeft']  || game.keys['a'] || game.keys['A']) dx--;
+  if (game.keys['ArrowRight'] || game.keys['d'] || game.keys['D']) dx++;
+  if (game.keys['ArrowUp']    || game.keys['w'] || game.keys['W']) dy--;
+  if (game.keys['ArrowDown']  || game.keys['s'] || game.keys['S']) dy++;
+  if (joystick.active) { dx += joystick.dx; dy += joystick.dy; }
+  if (dx && dy) { const l = Math.hypot(dx,dy); dx/=l; dy/=l; }
+  p.walking = (dx !== 0 || dy !== 0);
+  if (dx < 0) p.facingLeft = true; else if (dx > 0) p.facingLeft = false;
+  p.x = Math.max(0, Math.min(game.screenW - game.charW, p.x + dx * p.speed * dt));
+  p.y = Math.max(100, Math.min(game.screenH - game.charH - 20, p.y + dy * p.speed * dt));
+  const bob = p.walking ? Math.abs(Math.sin(time * 0.012)) * 4 : 0;
+  boyEl.style.transform = `translate3d(${p.x}px, ${p.y + bob}px, 0) scaleX(${p.facingLeft ? -1 : 1})`;
+}
+
+function updateGirl(dt) {
+  const g = game.girl, p = game.player;
+  const dx = p.x - g.x, dy = p.y - g.y;
+  const dist = Math.hypot(dx, dy);
+  g.walking = false;
+  g.stateTimer -= dt;
+
+  if (dist < 120 && game.love > 20) {
+    g.state = 'blush';
+    g.facingLeft = dx < 0;
+    g.blushing = true;
+    game.love = Math.min(100, game.love + 0.015 * dt);
+    if (Math.random() < 0.015 * dt) spawnFloatHeart(g.x + game.charW/2, g.y);
+    if (Math.random() < 0.003 * dt) showDialog(blushSays[Math.floor(Math.random() * blushSays.length)]);
+  } else if (dist < 300) {
+    g.state = 'notice'; g.facingLeft = dx < 0; g.blushing = false;
+  } else if (game.love > 50 && dist < 500) {
+    g.state = 'follow'; g.blushing = false;
+    if (dist > 90) {
+      const m = g.speed * dt;
+      g.x += (dx/dist) * m; g.y += (dy/dist) * m;
+      g.walking = true; g.facingLeft = dx < 0;
+    }
+  } else {
+    g.blushing = false;
+    if (g.stateTimer <= 0) {
+      if (Math.random() < 0.55) {
+        g.state = 'idle'; g.stateTimer = 80 + Math.random() * 120;
+      } else {
+        g.state = 'wander';
+        g.target = {
+          x: 100 + Math.random() * (game.screenW - 200),
+          y: 150 + Math.random() * (game.screenH - 350)
+        };
+        g.stateTimer = 220;
+      }
+    }
+    if (g.state === 'wander' && g.target) {
+      const tx = g.target.x - g.x, ty = g.target.y - g.y;
+      const td = Math.hypot(tx, ty);
+      if (td > 10) {
+        const m = g.speed * dt;
+        g.x += (tx/td) * m; g.y += (ty/td) * m;
+        g.walking = true; g.facingLeft = tx < 0;
+      } else { g.target = null; g.state = 'idle'; g.stateTimer = 60; }
+    }
+  }
+
+  g.x = Math.max(0, Math.min(game.screenW - game.charW, g.x));
+  g.y = Math.max(100, Math.min(game.screenH - game.charH - 20, g.y));
+
+  const bob = g.walking ? Math.abs(Math.sin(time * 0.012 + 1)) * 4 : 0;
+  girlEl.style.transform = `translate3d(${g.x}px, ${g.y + bob}px, 0) scaleX(${g.facingLeft ? -1 : 1})`;
+  girlEl.classList.toggle('blushing', g.blushing);
+}
+
+function spawnCollectible() {
+  const el = document.createElement('div');
+  el.className = 'heart-item';
+  el.textContent = ['💖','💕','❤️','💗'][Math.floor(Math.random()*4)];
+  const x = 50 + Math.random() * (game.screenW - 100);
+  const y = 150 + Math.random() * (game.screenH - 300);
+  el.style.left = x + 'px'; el.style.top = y + 'px';
+  heartsContainer.appendChild(el);
+  game.collectibles.push({ x, y, el });
+}
+
+function updateCollectibles(dt) {
+  game.spawnTimer += dt;
+  if (game.spawnTimer >= game.nextSpawn && game.collectibles.length < 6) {
+    game.spawnTimer = 0; spawnCollectible();
+  }
+  const px = game.player.x + game.charW/2;
+  const py = game.player.y + game.charH/2;
+  for (let i = game.collectibles.length - 1; i >= 0; i--) {
+    const h = game.collectibles[i];
+    if (Math.hypot(px - (h.x + 18), py - (h.y + 18)) < 50) {
+      h.el.remove(); game.collectibles.splice(i, 1);
+      game.heartsHeld++; spawnFloatHeart(h.x + 18, h.y);
+    }
+  }
+}
+
+function updateProximity() {
+  const p = game.player, g = game.girl;
+  const dist = Math.hypot(
+    (p.x + game.charW/2) - (g.x + game.charW/2),
+    (p.y + game.charH/2) - (g.y + game.charH/2)
+  );
+  const prompt = $('interact-prompt');
+  if (dist < 150 && game.heartsHeld > 0) prompt.style.display = 'block';
+  else prompt.style.display = 'none';
+  if (game.love >= 100 && !game.endingShown) showEnding();
+}
+
+function giveHeart() {
+  if (game.heartsHeld <= 0 || game.love >= 100) return;
+  const p = game.player, g = game.girl;
+  const dist = Math.hypot(
+    (p.x + game.charW/2) - (g.x + game.charW/2),
+    (p.y + game.charH/2) - (g.y + game.charH/2)
+  );
+  if (dist > 150) return;
+  game.heartsHeld--;
+  game.love = Math.min(100, game.love + 12);
+  showDialog(giftResponses[Math.floor(Math.random() * giftResponses.length)]);
+  spawnFloatHeart(g.x + game.charW/2, g.y);
+  spawnFloatHeart(g.x + game.charW/2 + 22, g.y + 20);
+  spawnFloatHeart(g.x + game.charW/2 - 22, g.y + 20);
+}
+
+let dialogTimer = null;
+function showDialog(text) {
+  const el = $('dialog-bubble');
+  el.textContent = text;
+  el.style.display = 'block';
+  el.style.animation = 'none'; void el.offsetHeight;
+  el.style.animation = 'bubbleIn .3s ease-out';
+  clearTimeout(dialogTimer);
+  dialogTimer = setTimeout(() => el.style.display = 'none', 2200);
+}
+
+function spawnFloatHeart(x, y) {
+  const el = document.createElement('div');
+  el.className = 'float-heart';
+  el.textContent = ['💖','💕','❤️','💗'][Math.floor(Math.random()*4)];
+  el.style.left = x + 'px'; el.style.top = y + 'px';
+  fxContainer.appendChild(el);
+  setTimeout(() => el.remove(), 1900);
+}
+
+function updateUI() {
+  $('loveVal').textContent = Math.floor(game.love);
+  $('love-bar-fill').style.width = game.love + '%';
+  $('heartsCount').textContent = game.heartsHeld;
+}
+
+function showEnding() {
+  game.endingShown = true; game.running = false;
+  $('endTitle').textContent = '💕 Happily Ever After';
+  $('endText').textContent =
+    'Tumne usse dil se dil ka rishta jod diya. Woh muskurayi, tum muskuraye... ' +
+    'aur us din ke baad, har pal saath bitaya. Woh yaad, ab hamesha ke liye ' +
+    'tumhari kahani ban gayi. ❤️';
+  $('ending-screen').style.display = 'flex';
+  for (let i = 0; i < 22; i++) {
+    setTimeout(() => spawnFloatHeart(
+      game.screenW/2 + (Math.random()-.5)*420,
+      game.screenH/2 + (Math.random()-.5)*320
+    ), i * 100);
+  }
+}
+
+window.addEventListener('keydown', e => {
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+  game.keys[e.key] = true;
+  if (e.key === 'e' || e.key === 'E' || e.key === ' ') giveHeart();
+});
+window.addEventListener('keyup', e => { game.keys[e.key] = false; });
+$('interact-prompt').addEventListener('click', giveHeart);
+
+const joystick = { active:false, dx:0, dy:0, maxDist:45 };
+const joyEl = $('joystick'), joyKnob = $('joystick-knob');
+let joyCenter = { x:0, y:0 };
+
+function joyStart(e) {
+  e.preventDefault();
+  const t = e.touches ? e.touches[0] : e;
+  const r = joyEl.getBoundingClientRect();
+  joyCenter = { x: r.left + r.width/2, y: r.top + r.height/2 };
+  joystick.active = true; joyMove(e);
+}
+function 
